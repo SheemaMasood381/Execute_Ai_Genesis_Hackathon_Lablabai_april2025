@@ -26,27 +26,40 @@ aiml_llm =LLM(
 API_KEY = AIML_API_KEY  # Add your AIML API Key here
 BASE_URL = "https://api.aimlapi.com/v1/stt"
 
-# Function to send audio to AIML API for transcription
+
+
+# Function to send audio to AIML API for transcription with better error handling
 def transcribe_audio_with_aiml(audio_data):
     url = BASE_URL
     headers = {"Authorization": f"Bearer {API_KEY}"}
     
-    # Send audio to AIML for transcription
     files = {"audio": ("audio.wav", audio_data, "audio/wav")}
     data = {"model": "#g1_whisper-large"}  # Model for transcription
 
     try:
-        response = requests.post(url, headers=headers, data=data, files=files)
-        response.raise_for_status()  # Raise an error if the status code is 400 or higher
+        response = requests.post(url, headers=headers, data=data, files=files, timeout=30)
+        response.raise_for_status()
         response_data = response.json()
-        # Extract transcript
         transcript = response_data["results"]["channels"][0]["alternatives"][0]["transcript"]
         return transcript
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error during transcription: {e}")
+
+    except requests.exceptions.Timeout:
+        st.warning("⏳ The transcription service is taking too long to respond. Please try again later.")
         return None
+
+    except requests.exceptions.HTTPError as http_err:
+        if response.status_code == 524:
+            st.warning("⚠️ The transcription server is currently unavailable (timeout). Please try again after some time.")
+        else:
+            st.warning(f"⚠️ An unexpected error occurred: {http_err}. Please try again later.")
+        return None
+
+    except requests.exceptions.RequestException as e:
+        st.warning(f"⚠️ Network issue occurred: {e}. Please check your connection and try again.")
+        return None
+
     except KeyError as e:
-        st.error(f"Error parsing transcription result: {e}")
+        st.warning("⚠️ The transcription service returned an unexpected response. Please try again later.")
         return None
 
 
