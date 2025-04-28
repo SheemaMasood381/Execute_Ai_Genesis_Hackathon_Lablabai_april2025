@@ -1,6 +1,6 @@
 [server]
 headless = true
-port = $PORT
+port = 8501
 enableCORS = false
 
 [theme]
