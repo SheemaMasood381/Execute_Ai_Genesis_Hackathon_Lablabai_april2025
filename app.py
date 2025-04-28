@@ -33,9 +33,10 @@ import requests
 # Function to send audio to AIML API for transcription with error handling
 def transcribe_audio_with_aiml(audio_data):
     # Check if the audio file size is under 5MB
-    if len(audio_data) > 5 * 1024 * 1024:  # 5 MB limit
+    if audio_data.size > 5 * 1024 * 1024:  # 5 MB limit
         st.warning("⚠️ Please upload a smaller audio file (less than 5MB) for better performance.")
         return None
+
 
     url = BASE_URL
     headers = {"Authorization": f"Bearer {API_KEY}"}
