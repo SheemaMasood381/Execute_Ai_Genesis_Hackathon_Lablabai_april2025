@@ -27,40 +27,53 @@ API_KEY = AIML_API_KEY  # Add your AIML API Key here
 BASE_URL = "https://api.aimlapi.com/v1/stt"
 
 
+import streamlit as st
+import requests
 
-# Function to send audio to AIML API for transcription with better error handling
+# Function to send audio to AIML API for transcription with error handling
 def transcribe_audio_with_aiml(audio_data):
+    # Check if the audio file size is under 5MB
+    if len(audio_data) > 5 * 1024 * 1024:  # 5 MB limit
+        st.warning("⚠️ Please upload a smaller audio file (less than 5MB) for better performance.")
+        return None
+
     url = BASE_URL
     headers = {"Authorization": f"Bearer {API_KEY}"}
     
+    # Prepare the audio file for sending
     files = {"audio": ("audio.wav", audio_data, "audio/wav")}
     data = {"model": "#g1_whisper-large"}  # Model for transcription
 
     try:
-        response = requests.post(url, headers=headers, data=data, files=files, timeout=30)
-        response.raise_for_status()
+        # Send audio data to AIML API with timeout set to 60 seconds
+        response = requests.post(url, headers=headers, data=data, files=files, timeout=60)
+        response.raise_for_status()  # Raise an error if the status code is 400 or higher
+        
+        # Parse the transcription result from the response
         response_data = response.json()
         transcript = response_data["results"]["channels"][0]["alternatives"][0]["transcript"]
+        
         return transcript
 
     except requests.exceptions.Timeout:
-        st.warning("⏳ The transcription service is taking too long to respond. Please try again later.")
+        st.warning("⏳ We are using AIML API for transcription as per hackathon guidelines. However, the service is taking too long to respond. Please try again later.")
         return None
 
     except requests.exceptions.HTTPError as http_err:
         if response.status_code == 524:
-            st.warning("⚠️ The transcription server is currently unavailable (timeout). Please try again after some time.")
+            st.warning("⚠️ We are using AIML API for transcription as per hackathon guidelines. Unfortunately, the service is currently unavailable (timeout). Please try again later.")
         else:
-            st.warning(f"⚠️ An unexpected error occurred: {http_err}. Please try again later.")
+            st.warning(f"⚠️ We are using AIML API for transcription as per hackathon guidelines. An unexpected error occurred: {http_err}. Please try again later.")
         return None
 
     except requests.exceptions.RequestException as e:
-        st.warning(f"⚠️ Network issue occurred: {e}. Please check your connection and try again.")
+        st.warning(f"⚠️ We are using AIML API for transcription as per hackathon guidelines. A network issue occurred: {e}. Please check your connection and try again.")
         return None
 
     except KeyError as e:
-        st.warning("⚠️ The transcription service returned an unexpected response. Please try again later.")
+        st.warning("⚠️ We are using AIML API for transcription as per hackathon guidelines. The service returned an unexpected response. Please try again later.")
         return None
+
 
 
 # Define Agents
